@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     git
 
+VOLUME /root/.cache/
 WORKDIR /app
 
 ENTRYPOINT ["/tini", "--"]
