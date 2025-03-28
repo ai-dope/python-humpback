@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS humpback-base
+FROM python:3.12-slim AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TINI_VERSION='v0.19.0'
@@ -9,7 +9,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV TINI_VERSION=${TINI_VERSION}
 
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
+COPY entrypoint.sh /usr/bin/entrypoint.sh
+RUN chmod +x /tini /usr/bin/entrypoint.sh
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -22,11 +23,11 @@ RUN apt-get update && apt-get install -y \
 VOLUME /root/.cache/
 WORKDIR /app
 
-ENTRYPOINT ["/tini", "--"]
-CMD [ "/app/entrypoint.sh" ]
+ENTRYPOINT ["/tini", "--", "/usr/bin/entrypoint.sh"]
+CMD ["python", "/app/app.py"]
 
 
-FROM humpback-base AS humpback-ai
+FROM base AS cudnn
 
 ARG CUDNN_VERSION=12
 

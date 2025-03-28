@@ -8,4 +8,4 @@ echo "[$(python --version)] running @ [$(which python)]"
 pip install -q -r requirements.txt 2>&1
 clear
 
-python $@
+$@
