@@ -39,4 +39,7 @@ jobs:
       # Build and Push Images
       - name: Build and Push Images
         run: |
-          docker buildx bake --file docker-bake.hcl --set *.tags[0]=ghcr.io/${{ github.repository_owner }}/base-image:${{ env.version }} --push
+          docker buildx bake --file docker-bake.hcl \
+            --set base.tags[0]=ghcr.io/${{ github.repository }}-base:${{ env.version }} \
+            --set cudnn.tags[0]=ghcr.io/${{ github.repository }}-cudnn:${{ env.version }} \
+            --push
