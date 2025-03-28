@@ -35,7 +35,6 @@ ARG CUDNN_VERSION=12
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV CUDNN_VERSION=${CUDNN_VERSION}
-ENV HF_TOKEN='hf_REPLACE_ME'
 
 ### Install libcudnn - https://developer.nvidia.com/cudnn-downloads?target_os=Linux&target_arch=x86_64&Distribution=Debian&target_version=12&target_type=deb_network
 RUN wget https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb && \
