@@ -1,17 +1,22 @@
-name: Build and Push Docker Images to GHCR
+name: Build Docker Image
 
 on:
   push:
     branches:
       - main
+
   pull_request:
-    branches:
-      - main
+
+env:
+  IS_RELEASE: ${{ github.ref_name == 'main' && github.event_name == 'push' }}
+  REGISTRY: ghcr.io
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
+
     permissions:
+      contents: write
       packages: write
 
     steps:
@@ -19,8 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.DEVOPS_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-tags: true
+
+      - uses: FranzDiebold/github-env-vars-action@v2.1.0
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
@@ -30,22 +37,30 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
-          registry: https://ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.DEVOPS_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Generate semantic version
-      - name: Generate Semantic Version
-        id: version
-        run: |
-          # Use git describe to generate a version based on tags
-          version=$(git describe --tags --always --dirty="-dev")
-          echo "version=${version}" >> $GITHUB_ENV
+      - name: Auto SemVer
+        if: ${{ env.IS_RELEASE == 'true' }}
+        id: get-ver
+        uses: fregante/daily-version-action@v2.1.1
 
       # Build and Push Images
       - name: Build and Push Images
         run: |
           docker buildx bake --file docker-bake.hcl \
-            --set base.tags=ghcr.io/${{ github.repository }}-base:${{ env.version }} \
-            --set cudnn.tags=ghcr.io/${{ github.repository }}-cudnn:${{ env.version }} \
+            --set base.tags=${{ env.REGISTRY }}/${{ github.repository }}-base:${{ steps.get-ver.outputs.version }} \
+            --set cudnn.tags=${{ env.REGISTRY }}/${{ github.repository }}-cudnn:${{ steps.get-ver.outputs.version }} \
             --push
+
+      - name: Create Release
+        if: steps.get-ver.outputs.created
+        uses: ncipollo/release-action@v1.11.1
+        with:
+          name: ${{ env.CI_REPOSITORY_NAME_SLUG }}-${{ steps.get-ver.outputs.version }}
+          commit: ${{ github.sha }}
+          tag: ${{ steps.get-ver.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          prerelease: ${{ env.IS_RELEASE == 'false' }}
